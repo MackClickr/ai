@@ -12,22 +12,24 @@ function requestToChat(cookie?: string): NextRequest {
 }
 
 describe("middleware", () => {
-  it("redirects /chat to / without a cookie", () => {
-    const response = middleware(requestToChat());
+  it("redirects /chat to / without a cookie", async () => {
+    const response = await middleware(requestToChat());
     expect(response.status).toBe(307);
     expect(response.headers.get("location")).toBe("http://localhost:3000/");
   });
 
-  it("allows /chat with a valid cookie", () => {
-    const response = middleware(requestToChat(serializeSession("Ada")));
+  it("allows /chat with a valid cookie", async () => {
+    const response = await middleware(
+      requestToChat(await serializeSession("Ada")),
+    );
     expect(response.status).toBe(200);
     expect(response.headers.get("location")).toBeNull();
   });
 
-  it("redirects and clears a tampered cookie", () => {
-    const token = serializeSession("Ada");
+  it("redirects and clears a tampered cookie", async () => {
+    const token = await serializeSession("Ada");
     const tampered = token.slice(0, -1) + (token.endsWith("a") ? "b" : "a");
-    const response = middleware(requestToChat(tampered));
+    const response = await middleware(requestToChat(tampered));
     expect(response.status).toBe(307);
     expect(response.headers.get("location")).toBe("http://localhost:3000/");
     const setCookie = response.headers.get("set-cookie") ?? "";

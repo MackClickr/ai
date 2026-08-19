@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { SESSION_COOKIE, parseSession } from "@/lib/session";
 
-export function middleware(request: NextRequest): NextResponse {
+export async function middleware(request: NextRequest): Promise<NextResponse> {
   const raw = request.cookies.get(SESSION_COOKIE)?.value;
-  const session = parseSession(raw);
+  const session = await parseSession(raw);
   if (session) {
     return NextResponse.next();
   }
