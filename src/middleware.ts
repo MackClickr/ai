@@ -7,7 +7,11 @@ export async function middleware(request: NextRequest): Promise<NextResponse> {
   if (session) {
     return NextResponse.next();
   }
-  const response = NextResponse.redirect(new URL("/", request.url));
+
+  const onChat = request.nextUrl.pathname.startsWith("/chat");
+  const response = onChat
+    ? NextResponse.redirect(new URL("/", request.url))
+    : NextResponse.next();
   if (raw) {
     response.cookies.delete(SESSION_COOKIE);
   }
@@ -15,5 +19,5 @@ export async function middleware(request: NextRequest): Promise<NextResponse> {
 }
 
 export const config = {
-  matcher: ["/chat/:path*"],
+  matcher: ["/", "/chat/:path*"],
 };

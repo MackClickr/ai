@@ -75,6 +75,7 @@ export async function parseSession(
   if (!cookieValue) {
     return null;
   }
+  secret();
   try {
     const dot = cookieValue.lastIndexOf(".");
     if (dot <= 0) {

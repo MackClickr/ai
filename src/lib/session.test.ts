@@ -1,7 +1,7 @@
 import { readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const set = vi.fn();
 const get = vi.fn();
@@ -26,6 +26,10 @@ import {
 } from "./session";
 
 describe("serializeSession / parseSession", () => {
+  afterEach(() => {
+    vi.unstubAllEnvs();
+  });
+
   it("does not import node:crypto", () => {
     const source = readFileSync(
       join(dirname(fileURLToPath(import.meta.url)), "session.ts"),
@@ -52,18 +56,38 @@ describe("serializeSession / parseSession", () => {
   it("rejects garbage", async () => {
     await expect(parseSession("not-a-valid-token")).resolves.toBeNull();
   });
+
+  it("throws when SESSION_SECRET is missing", async () => {
+    const token = await serializeSession("Ada");
+    vi.stubEnv("SESSION_SECRET", "");
+    await expect(parseSession(token)).rejects.toThrow("SESSION_SECRET is not set");
+    await expect(serializeSession("Ada")).rejects.toThrow(
+      "SESSION_SECRET is not set",
+    );
+  });
 });
 
 describe("sessionCookieOptions", () => {
-  it("is httpOnly, Lax, no maxAge, Secure only in production", () => {
+  afterEach(() => {
+    vi.unstubAllEnvs();
+  });
+
+  it("is httpOnly, Lax, and has no maxAge", () => {
     const options = sessionCookieOptions();
-    expect(options).toEqual({
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "lax",
-      path: "/",
-    });
+    expect(options.httpOnly).toBe(true);
+    expect(options.sameSite).toBe("lax");
+    expect(options.path).toBe("/");
     expect("maxAge" in options).toBe(false);
+  });
+
+  it("sets Secure in production", () => {
+    vi.stubEnv("NODE_ENV", "production");
+    expect(sessionCookieOptions().secure).toBe(true);
+  });
+
+  it("does not set Secure in development", () => {
+    vi.stubEnv("NODE_ENV", "development");
+    expect(sessionCookieOptions().secure).toBe(false);
   });
 });
 
